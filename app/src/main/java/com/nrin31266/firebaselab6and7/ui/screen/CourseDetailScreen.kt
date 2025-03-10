@@ -131,7 +131,7 @@ fun CourseDetailScreen(
                     Button(
                         onClick = {
                            courseViewModel.deleteCourse(courseId, context, {
-                               navController.navigate(Routes.COURSE_LIST)
+                               navController.popBackStack()
                            })
 
 

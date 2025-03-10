@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.FirebaseException
 import com.nrin31266.firebaselab6and7.data.model.Course
 import com.nrin31266.firebaselab6and7.data.reponsitory.CourseRepository
+import com.nrin31266.firebaselab6and7.storage.UploadFileToStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ import javax.inject.Inject
 
 class CourseViewModel :ViewModel() {
     private val repository = CourseRepository()
+    private val uploadFileToStorage = UploadFileToStorage();
 
     private val _courses = MutableStateFlow<List<Course>>(emptyList())
     val courses: StateFlow<List<Course>> = _courses
@@ -46,13 +48,19 @@ class CourseViewModel :ViewModel() {
         }
     }
 
-    fun addCourse (courseReq: Course, context: Context){
+    fun addCourse (courseReq: Course, context: Context, onResult: (id: String) -> Unit){
         _loadingButton.value = true
         viewModelScope.launch (Dispatchers.IO){
             try {
+                if (courseReq.uri != null) {
+                    courseReq.imageUrl = uploadFileToStorage.uploadImage(courseReq.uri!!, context)
+                    courseReq.uri = null
+                }
+
                 val courseId = repository.addCourse(courseReq)
                 withContext(Dispatchers.Main){
                     Toast.makeText(context, "Add Course Successfully With ID: $courseId", Toast.LENGTH_SHORT).show()
+                    onResult(courseId)
                 }
             }catch (e: FirebaseException){
                 withContext(Dispatchers.Main){

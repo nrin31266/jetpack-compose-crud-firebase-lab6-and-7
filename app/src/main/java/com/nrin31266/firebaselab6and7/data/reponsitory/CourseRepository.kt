@@ -8,6 +8,7 @@ import kotlinx.coroutines.tasks.await
 class CourseRepository{
     private val db = Firebase.firestore
 
+
     suspend fun getCourses() : List<Course>{
         val firestoreRef = db.collection("course")
         val snapshot = firestoreRef.get().await()
