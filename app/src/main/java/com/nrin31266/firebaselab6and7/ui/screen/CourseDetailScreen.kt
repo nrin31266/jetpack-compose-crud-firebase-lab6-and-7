@@ -1,35 +1,28 @@
 package com.nrin31266.firebaselab6and7.ui.screen
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Label
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import com.nrin31266.firebaselab6and7.R
 import com.nrin31266.firebaselab6and7.data.model.Course
-import com.nrin31266.firebaselab6and7.nav.Routes
 import com.nrin31266.firebaselab6and7.ui.viewmodel.CourseViewModel
+import androidx.navigation.NavController
 
 @Composable
 fun CourseDetailScreen(
@@ -37,31 +30,30 @@ fun CourseDetailScreen(
     courseId: String,
     courseViewModel: CourseViewModel
 ) {
-
     val isLoading by courseViewModel.isLoading.collectAsState()
     val isLoadingButton by courseViewModel.isLoadingButton.collectAsState()
-    var courseName: String by remember { mutableStateOf("") }
-    var courseDescription: String by remember { mutableStateOf("") }
-    var courseDuration: String by remember { mutableStateOf("") }
-
+    var courseName by remember { mutableStateOf("") }
+    var courseDescription by remember { mutableStateOf("") }
+    var courseDuration by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        courseViewModel.getCourseById(courseId, context, { data: Course ->
-            run {
-                courseName = data.name
-                courseDescription = data.description
-                courseDuration = data.description
-            }
-        })
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        imageUri = uri
+    }
 
+    LaunchedEffect(Unit) {
+        courseViewModel.getCourseById(courseId, context) { data ->
+            courseName = data.name
+            courseDescription = data.description
+            courseDuration = data.duration // bạn viết nhầm courseDuration = description rồi nhé
+            imageUrl = data.imageUrl
+        }
     }
 
     if (isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
     } else {
@@ -69,41 +61,63 @@ fun CourseDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 5.dp, end = 5.dp),
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                Text("Course ID: $courseId")
 
-                Text("Course ID: ${courseId}")
+                Box(
+                    modifier = Modifier
+                        .border(1.dp, Color.Gray, RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(16.dp))
+                        .size(200.dp)
+                        .clickable { launcher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    when {
+                        imageUri != null -> {
+                            Image(
+                                painter = rememberAsyncImagePainter(imageUri),
+                                contentDescription = "Selected Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        !imageUrl.isNullOrEmpty() -> {
+                            Image(
+                                painter = rememberAsyncImagePainter(imageUrl),
+                                contentDescription = "Course Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        else -> {
+                            Image(
+                                painter = painterResource(id = R.drawable.add_image_icon),
+                                contentDescription = "Add Image",
+                                modifier = Modifier.size(100.dp)
+                            )
+                        }
+                    }
+                }
 
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Course Name")
-                    },
                     value = courseName,
-                    onValueChange = {
-                        courseName = it
-                    }
+                    onValueChange = { courseName = it },
+                    label = { Text("Course Name") },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Course Duration")
-                    },
                     value = courseDuration,
-                    onValueChange = {
-                        courseDuration = it
-                    }
+                    onValueChange = { courseDuration = it },
+                    label = { Text("Course Duration") },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Course Description")
-                    },
                     value = courseDescription,
-                    onValueChange = {
-                        courseDescription = it
-                    }
+                    onValueChange = { courseDescription = it },
+                    label = { Text("Course Description") },
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Row(
@@ -112,16 +126,19 @@ fun CourseDetailScreen(
                 ) {
                     Button(
                         onClick = {
-                            var course = Course(
+                            val course = Course(
                                 name = courseName,
                                 duration = courseDuration,
-                                description = courseDescription
+                                description = courseDescription,
+                                imageUrl = imageUrl
                             )
-                            courseViewModel.updateCourse(courseId ,course, context)
-
+                            if (imageUri != null) {
+                                course.uri = imageUri
+                            }
+                            courseViewModel.updateCourse(courseId, course, context)
                         },
                         modifier = Modifier
-                            .weight(0.7f)
+                            .weight(1f)
                             .padding(top = 20.dp),
                         enabled = !isLoadingButton
                     ) {
@@ -130,14 +147,17 @@ fun CourseDetailScreen(
 
                     Button(
                         onClick = {
-                           courseViewModel.deleteCourse(courseId, context, {
-                               navController.popBackStack()
-                           })
-
-
-                        }, modifier = Modifier.padding(top = 20.dp), enabled = !isLoadingButton,
-                         colors = ButtonColors(
-                            contentColor = Color.White, containerColor = Color.Red, disabledContentColor = Color.White, disabledContainerColor = Color.Gray
+                            courseViewModel.deleteCourse(courseId, context) {
+                                navController.popBackStack()
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(top = 20.dp),
+                        enabled = !isLoadingButton,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red,
+                            contentColor = Color.White
                         )
                     ) {
                         Text("Delete")

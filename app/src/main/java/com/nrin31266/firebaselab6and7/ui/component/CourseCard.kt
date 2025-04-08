@@ -26,40 +26,63 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nrin31266.firebaselab6and7.data.model.Course
 
+import coil.compose.AsyncImage
+
 @Composable
 @Preview
 fun CourseCard(
-    course: Course = Course("1", "C2", "acasdsa", "dsadsadsa"),
-    handleClick: () -> Unit = {
-
-
-    }
+    course: Course = Course("1", "Kotlin Basics", "4 weeks", "Learn Kotlin from scratch", imageUrl = "https://developer.android.com/images/brand/Android_Robot.png"),
+    handleClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { handleClick() },
-        shape = RoundedCornerShape(6.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        Row(
+            modifier = Modifier
+                .padding(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = course.name,
-                color = Color(90, 173, 58),
-                fontSize = 30.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = course.duration,
-                fontSize = 24.sp,
-            )
-            Text(
-                text = course.description,
-                fontSize = 24.sp,
-            )
+            course.imageUrl?.let { url ->
+                AsyncImage(
+                    model = url,
+                    contentDescription = "Course Image",
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .shadow(2.dp, RoundedCornerShape(6.dp))
+                        .background(Color.LightGray, shape = RoundedCornerShape(6.dp))
+                        .border(1.dp, Color.Gray, RoundedCornerShape(6.dp))
+                        .weight(1f)
+                        .fillMaxWidth(0.3f) // chiếm khoảng 30% chiều rộng
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(3f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = course.name,
+                    color = Color(90, 173, 58),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = course.duration,
+                    fontSize = 16.sp,
+                    color = Color.DarkGray
+                )
+                Text(
+                    text = course.description,
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    maxLines = 2
+                )
+            }
         }
     }
 }
